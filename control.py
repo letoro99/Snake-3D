@@ -9,7 +9,7 @@ class Controller:
     def __init__(self):
         self.model = None
         self.apple = None
-        self.dif = None
+        self.dif = 1
         self.last_button = "a"
     
     def set_model(self,model):
@@ -21,7 +21,32 @@ class Controller:
     def set_dif(self,d):
         self.dif = d
     
-    def on_key(window, key, scancode, action, mods):
-
+    def on_key(self,window, key, scancode, action, mods):
         if action != glfw.PRESS:
             return
+        
+        elif (key == glfw.KEY_LEFT or key == glfw.KEY_A) and action == glfw.PRESS:
+            if self.model.jugando == False:
+                self.model.dx = -1
+                self.model.dy = 0
+                self.model.jugando = True
+        
+        elif (key == glfw.KEY_RIGHT or key == glfw.KEY_D) and action == glfw.PRESS:
+            if self.model.jugando == False:
+                self.model.dx = 1
+                self.model.dy = 0
+                self.model.jugando = True
+
+        elif (key == glfw.KEY_UP or key == glfw.KEY_W) and action == glfw.PRESS:
+            if self.model.jugando == False:
+                self.model.dy = 1
+                self.model.dx = 0
+                self.model.jugando = True
+
+        elif (key == glfw.KEY_DOWN or key == glfw.KEY_S) and action == glfw.PRESS:
+            if self.model.jugando == False:
+                self.model.dy = -1
+                self.model.dx = 0
+                self.model.jugando = True
+
+        

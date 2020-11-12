@@ -26,25 +26,25 @@ class Controller:
             return
         
         elif (key == glfw.KEY_LEFT or key == glfw.KEY_A) and action == glfw.PRESS:
-            if self.model.jugando == False:
+            if self.model.jugando == False and self.model.dx != 1:
                 self.model.dx = -1
                 self.model.dy = 0
                 self.model.jugando = True
         
         elif (key == glfw.KEY_RIGHT or key == glfw.KEY_D) and action == glfw.PRESS:
-            if self.model.jugando == False:
+            if self.model.jugando == False and self.model.dx != -1:
                 self.model.dx = 1
                 self.model.dy = 0
                 self.model.jugando = True
 
         elif (key == glfw.KEY_UP or key == glfw.KEY_W) and action == glfw.PRESS:
-            if self.model.jugando == False:
+            if self.model.jugando == False and self.model.dy != -1:
                 self.model.dy = 1
                 self.model.dx = 0
                 self.model.jugando = True
 
         elif (key == glfw.KEY_DOWN or key == glfw.KEY_S) and action == glfw.PRESS:
-            if self.model.jugando == False:
+            if self.model.jugando == False and self.model.dy != 1:
                 self.model.dy = -1
                 self.model.dx = 0
                 self.model.jugando = True

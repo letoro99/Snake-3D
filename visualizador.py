@@ -35,7 +35,8 @@ if __name__ == "__main__":
     glfw.set_key_callback(window, controlador.on_key)
 
     pipeline = es.SimpleModelViewProjectionShaderProgram()
-    texture_pipeline = es.SimpleTextureModelViewProjectionShaderProgram()
+    pipeline_pantalla = es.SimpleTextureTransformShaderProgram()
+    pipeline_texture = es.SimpleTextureModelViewProjectionShaderProgram()
     
     glUseProgram(pipeline.shaderProgram)
 
@@ -48,7 +49,7 @@ if __name__ == "__main__":
     glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "projection"), 1, GL_TRUE, projection)
 
     static_view = tr.lookAt(
-            np.array([20,0,25]), # eye
+            np.array([0,-20,25]), # eye
             np.array([0,0,0]), # at
             np.array([0,0,1])  # up
         )
@@ -56,30 +57,44 @@ if __name__ == "__main__":
 
     scene = Escenario(22)
     snake = Serpiente()
+    premio = Premio()
 
     controlador.set_model(snake)
     controlador.set_dif(1)
     
     t0 = 0
     dt = 0
+    rot = 0
 
     while not glfw.window_should_close(window):
         
         ti = glfw.get_time()
         dt = ti - t0
 
-        if dt > 1/2:
+        if dt > 1/2 and not snake.gameOver:
             snake.update()
+            snake.colision(premio)
             dt = 0
             t0 = ti
+        
+        premio.posicionar_rotar(ti)
 
         glfw.poll_events()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         
-        scene.draw(pipeline)
-        snake.draw(pipeline)
+        if snake.gameOver:
+            glClearColor(0,0,0,1)
+            if rot < (np.pi/15):
+                scene.update(rot)
+                rot += 0.00008
+            scene.draw_go(pipeline_pantalla,2)
+            glfw.swap_buffers(window)
 
-        glfw.swap_buffers(window)
+        else:
+            scene.draw(pipeline)
+            snake.draw(pipeline)
+            premio.draw(pipeline)
+            glfw.swap_buffers(window)
 
     glfw.terminate()

@@ -1,6 +1,11 @@
 # tarea2
 
 # version v0.3
+ - Se agregaron las distintas camaras aunque solo funcionan dos correctamentes
+ - Se agrego la lengua y los ojos de la serpiente, las cuales rotan junto con la cabeza
+ - Se redujo el tamaño del fondo por el problema de la perspectiva.
+ 
+******
  - Se agrego la mecanica de que la serpiente crezca al colisionar con el premio
  - Se agregó la mecánica de colisionar con el cuerpo.
  - Se agregó la mecánica de colisionar con la pared.

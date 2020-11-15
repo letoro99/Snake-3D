@@ -67,7 +67,7 @@ class Controller:
                     self.model.theta = -1*np.pi/2
                     self.model.jugando = True
         
-        elif self.camera.camera_activa == 4:
+        elif self.camera.camera_activa == 5:
             if (key == glfw.KEY_LEFT or key == glfw.KEY_A) and action == glfw.PRESS:
                 if self.model.theta == 0:
                     self.model.dy = 1

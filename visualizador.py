@@ -66,7 +66,7 @@ if __name__ == "__main__":
         ti = glfw.get_time()
         dt = ti - t0
 
-        if dt > 0.3 and not snake.gameOver and camera.rotando == False:
+        if dt > 0.3 and not snake.gameOver:
             snake.update()
             camera.cambiar_pos_camera(snake)
             snake.colision(premio)

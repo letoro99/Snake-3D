@@ -313,6 +313,7 @@ class Camera:
             camera = self.camera2
         else:
             camera = self.camera3
+            
         glUseProgram(pipeline.shaderProgram)
         projection = tr.perspective(45, float(width)/float(height), 0.1, 100)
         glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "projection"), 1, GL_TRUE, projection)

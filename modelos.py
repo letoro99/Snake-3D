@@ -5,6 +5,7 @@
 # Modulos 
 import glfw
 import numpy as np
+from math import cos
 import random as rd
 from OpenGL.GL import *
 import OpenGL.GL.shaders
@@ -128,13 +129,27 @@ def generar_esfera_unit(nTheta,nPhi,color):
 class Cabeza:
     def __init__(self,x,y,z):
         gpu_cabeza = es.toGPUShape(generar_esfera_unit(5,7,[1,0,0]))
+        gpu_lengua = es.toGPUShape(bs.createColorCube(0,1,0))
+        gpu_ojos = es.toGPUShape(bs.createColorCube(0,0,0))
 
         cabeza = sg.SceneGraphNode('cabeza')
-        cabeza.transform = tr.uniformScale(0.8)
+        cabeza.transform = tr.uniformScale(0.7)
         cabeza.childs += [gpu_cabeza]
+
+        ojo_izq = sg.SceneGraphNode('ojo_izq')
+        ojo_izq.transform = tr.matmul([tr.uniformScale(0.4),tr.translate(0.8,0.8,0.8)])
+        ojo_izq.childs += [gpu_ojos]
+
+        ojo_der = sg.SceneGraphNode('ojo_der')
+        ojo_der.transform = tr.matmul([tr.uniformScale(0.4),tr.translate(0.8,-0.8,0.8)])
+        ojo_der.childs += [gpu_ojos]
+
+        lengua = sg.SceneGraphNode('lengua')
+        lengua.transform = tr.matmul([tr.scale(1,0.5,0.3),tr.translate(0.4,0,-0.6)])
+        lengua.childs += [gpu_lengua] 
         
         transform_cabeza = sg.SceneGraphNode('cabezaTR')
-        transform_cabeza.childs += [cabeza]
+        transform_cabeza.childs += [cabeza,lengua,ojo_der,ojo_izq]
 
         self.model = transform_cabeza
         self.posx = x
@@ -145,9 +160,9 @@ class Cabeza:
         glUseProgram(pipeline.shaderProgram)
         sg.drawSceneGraphNode(self.model,pipeline,'model')
     
-    def posicionar(self,pos):
+    def posicionar(self,pos,angulo):
         self.posx, self.posy , self.posz = pos[0],pos[1],pos[2]
-        self.model.transform = tr.translate(self.posx,self.posy,self.posz)
+        self.model.transform = tr.matmul([tr.translate(self.posx,self.posy,self.posz),tr.rotationZ(angulo)])
 
 # Clase para dibujar el cuepro de la serpiente 
 class Cuerpo:
@@ -155,7 +170,7 @@ class Cuerpo:
         gpu_cuerpo = es.toGPUShape(generar_esfera_unit(5,7,[0.5,0.1,0]))
 
         cuerpo = sg.SceneGraphNode('cuerpo')
-        cuerpo.transform = tr.uniformScale(0.8)
+        cuerpo.transform = tr.uniformScale(0.7)
         cuerpo.childs += [gpu_cuerpo]
         
         transform_cuerpo = sg.SceneGraphNode('cuerpoTR')
@@ -181,9 +196,9 @@ class Serpiente:
         self.cabeza = Cabeza(0,0,1)
         self.n = 3
         self.cola = [Cuerpo(0,1,1),Cuerpo(0,2,1),Cuerpo(0,3,1)]
-        self.dx = 1 # Tiene que ser el minimo valor de avance
-        self.dy = 0 # Tiene que ser el minimo valor de avance
-        self.theta = 0 # Tiene que ser el valor donde incia la serpiente a mirar
+        self.dx = 0 # Tiene que ser el minimo valor de avance
+        self.dy = -1 # Tiene que ser el minimo valor de avance
+        self.theta = -1*np.pi/2 # Tiene que ser el valor donde incia la serpiente a mirar
         self.jugando = False
         self.gameOver = False
 
@@ -191,7 +206,7 @@ class Serpiente:
         for i in range(len(self.cola)-1,-1,-1):
             self.cola[i].posicionar([self.cola[i-1].posx,self.cola[i-1].posy,self.cola[i-1].posz])
         self.cola[0].posicionar([self.cabeza.posx,self.cabeza.posy,self.cabeza.posz])
-        self.cabeza.posicionar([self.cabeza.posx + self.dx, self.cabeza.posy + self.dy, self.cabeza.posz])
+        self.cabeza.posicionar([self.cabeza.posx + self.dx, self.cabeza.posy + self.dy, self.cabeza.posz],self.theta)
         self.jugando = False
         print(self.cabeza.posx,self.cabeza.posy)
     
@@ -261,6 +276,68 @@ class Premio:
         glUseProgram(pipeline.shaderProgram)
         sg.drawSceneGraphNode(self.model,pipeline,"model")
 
+# Clase para controlar las distintas camaras dependiendo de la tecla escogida.
+class Camera:
+    def __init__(self):
+
+        camera_first = tr.lookAt(
+            np.array([0,0,0]),
+            np.array([0,0,0]),
+            np.array([0,0,1])
+        )
+        
+        camera_2d = tr.lookAt(
+            np.array([0,-0.0001,30]),
+            np.array([0,0,0]),
+            np.array([0,0,1])
+        )
+        camera_iso = tr.lookAt(
+            np.array([20,-20,26]),
+            np.array([0,0,0]),
+            np.array([0,0,1])
+        )
+
+        self.camera1 = camera_first
+        self.camera2 = camera_2d
+        self.camera3 = camera_iso
+        self.camera_activa = 2
+        self.rotando = False
+
+    def cambiar_camera(self,num):
+        self.camera_activa = num
+    
+    def drawCamera(self,pipeline,width,height):
+        if self.camera_activa == 1:
+            camera = self.camera1
+        elif self.camera_activa == 2:
+            camera = self.camera2
+        else:
+            camera = self.camera3
+        glUseProgram(pipeline.shaderProgram)
+        projection = tr.perspective(45, float(width)/float(height), 0.1, 100)
+        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "projection"), 1, GL_TRUE, projection)
+        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "view"), 1, GL_TRUE, camera)
+
+    def cambiar_pos_camera(self,snake):
+        if snake.theta == 0:
+            eye_camera = np.array([snake.cabeza.posx-2,snake.cabeza.posy,5])
+            at_camera = np.array([50,snake.cabeza.posy,snake.cabeza.posx+2])
+        elif snake.theta == 1*np.pi/2:
+            eye_camera = np.array([snake.cabeza.posx,snake.cabeza.posy-2,5])
+            at_camera = np.array([snake.cabeza.posx,50,snake.cabeza.posy+2])
+        elif snake.theta == np.pi:
+            eye_camera = np.array([snake.cabeza.posx+2,snake.cabeza.posy,5])
+            at_camera = np.array([-50,snake.cabeza.posy,snake.cabeza.posx-2])
+        else:
+            eye_camera = np.array([snake.cabeza.posx,snake.cabeza.posy+2,2])            
+            at_camera = np.array([snake.cabeza.posx,50,snake.cabeza.posy-2])
+        
+        self.camera1 = tr.lookAt(
+            eye_camera,
+            at_camera,
+            np.array([0,0,1])
+        )
+
 # Clase para dibujar el escenario del juego (suelo y pared)
 class Escenario:
 
@@ -273,7 +350,7 @@ class Escenario:
 
         # Paredes
         paredes = sg.SceneGraphNode('paredes')
-        paredes.transform = tr.uniformScale(4*n)
+        paredes.transform = tr.uniformScale(3*n)
         paredes.childs += [gpu_pared]
 
         #Suelo

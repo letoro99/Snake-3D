@@ -45,22 +45,17 @@ if __name__ == "__main__":
     glEnable(GL_DEPTH_TEST)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
-    projection = tr.perspective(45, float(width)/float(height), 0.1, 100)
-    glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "projection"), 1, GL_TRUE, projection)
-
-    static_view = tr.lookAt(
-            np.array([0,-20,25]), # eye
-            np.array([0,0,0]), # at
-            np.array([0,0,1])  # up
-        )
-    glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "view"), 1, GL_TRUE, static_view)
-
     scene = Escenario(22)
     snake = Serpiente()
     premio = Premio()
+    premio.update(snake)
+    camera = Camera()
+    camera.cambiar_pos_camera(snake)
 
     controlador.set_model(snake)
     controlador.set_dif(1)
+    controlador.set_apple(premio)
+    controlador.set_camera(camera)
     
     t0 = 0
     dt = 0
@@ -71,15 +66,21 @@ if __name__ == "__main__":
         ti = glfw.get_time()
         dt = ti - t0
 
-        if dt > 1/2 and not snake.gameOver:
+        if dt > 0.3 and not snake.gameOver and camera.rotando == False:
             snake.update()
+            camera.cambiar_pos_camera(snake)
             snake.colision(premio)
             dt = 0
             t0 = ti
         
+        elif camera.rotando == True:
+            pass
+        
         premio.posicionar_rotar(ti)
 
         glfw.poll_events()
+
+        camera.drawCamera(pipeline,width,height)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         

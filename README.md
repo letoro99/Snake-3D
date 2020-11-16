@@ -1,5 +1,22 @@
 # tarea2
 
+#cosas por hacer
+ - Cambiar color a serpiente
+ - cambiar a textura a la base y la pared
+ - pensar en agregar el obstaculo.
+ - agregar la iluminacion.
+ - agregar diferentes tamaños (5 , 10 , 15)
+
+
+# version v0.5
+ - Se arreglo el funcionamietno de la camara en "primera persona".
+ - Se agrego una rotación a la cabeza de la serpiente cuando se esta jugando en primera persona.
+ - Se agrego los controles para la camara de primera persona.
+ - Se mejoró la rotación de la camara de primera persona cuando la serpiente cambia de dirección.
+ - Se modifico el orden de el while principal de "visualizador.py" para que la rotacion de la camara sea efectiva y no actualize el juego mientras rota.
+ - 
+ 
+******
 # version v0.4
  - Se agregaron las distintas camaras aunque solo funcionan dos correctamentes
  - Se agrego la lengua y los ojos de la serpiente, las cuales rotan junto con la cabeza

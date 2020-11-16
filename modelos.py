@@ -5,7 +5,7 @@
 # Modulos 
 import glfw
 import numpy as np
-from math import cos
+from math import cos, sin
 import random as rd
 from OpenGL.GL import *
 import OpenGL.GL.shaders
@@ -198,7 +198,7 @@ class Serpiente:
         self.cola = [Cuerpo(0,1,1),Cuerpo(0,2,1),Cuerpo(0,3,1)]
         self.dx = 0 # Tiene que ser el minimo valor de avance
         self.dy = -1 # Tiene que ser el minimo valor de avance
-        self.theta = -1*np.pi/2 # Tiene que ser el valor donde incia la serpiente a mirar
+        self.theta = 3*np.pi/2 # Tiene que ser el valor donde incia la serpiente a mirar
         self.jugando = False
         self.gameOver = False
 
@@ -219,9 +219,11 @@ class Serpiente:
         error = 0.00001
         if 11 - error <= self.cabeza.posx <= 11 + error or 11 - error <= self.cabeza.posy <= 11 + error:
             self.gameOver = True
+            print('muralla')
             
         if -11 - error <= self.cabeza.posx <= -11 + error or -11 - error <= self.cabeza.posy <= -11 + error:
             self.gameOver = True
+            print('muralla')
 
         if self.cabeza.posx - error <= premio.pos_x  <= self.cabeza.posx + error and self.cabeza.posy - error <= premio.pos_y <= self.cabeza.posy + error:
             nuevo = Cuerpo(self.cola[self.n-1].posx,self.cola[self.n-1].posy,1)
@@ -232,6 +234,7 @@ class Serpiente:
         for i in range(len(self.cola)):
             if self.cabeza.posx - error <= self.cola[i].posx  <= self.cabeza.posx + error and self.cabeza.posy - error <= self.cola[i].posy <= self.cabeza.posy + error:
                 self.gameOver = True
+                print('cuerpo')
 
 # Clase para dibujar el objeto premio
 class Premio:
@@ -302,6 +305,8 @@ class Camera:
         self.camera3 = camera_iso
         self.camera_activa = 2
         self.rotando = False
+        self.i = 0
+        self.angulo_ini = 0
 
     def cambiar_camera(self,num):
         self.camera_activa = num
@@ -313,7 +318,6 @@ class Camera:
             camera = self.camera2
         else:
             camera = self.camera3
-            
         glUseProgram(pipeline.shaderProgram)
         projection = tr.perspective(45, float(width)/float(height), 0.1, 100)
         glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "projection"), 1, GL_TRUE, projection)
@@ -321,23 +325,83 @@ class Camera:
 
     def cambiar_pos_camera(self,snake):
         if snake.theta == 0:
-            eye_camera = np.array([snake.cabeza.posx-2,snake.cabeza.posy,5])
-            at_camera = np.array([50,snake.cabeza.posy,snake.cabeza.posx+2])
+            eye_camera = np.array([snake.cabeza.posx-8,snake.cabeza.posy,5])
         elif snake.theta == 1*np.pi/2:
-            eye_camera = np.array([snake.cabeza.posx,snake.cabeza.posy-2,5])
-            at_camera = np.array([snake.cabeza.posx,50,snake.cabeza.posy+2])
+            eye_camera = np.array([snake.cabeza.posx,snake.cabeza.posy-8,5])
         elif snake.theta == np.pi:
-            eye_camera = np.array([snake.cabeza.posx+2,snake.cabeza.posy,5])
-            at_camera = np.array([-50,snake.cabeza.posy,snake.cabeza.posx-2])
+            eye_camera = np.array([snake.cabeza.posx+8,snake.cabeza.posy,5])
         else:
-            eye_camera = np.array([snake.cabeza.posx,snake.cabeza.posy+2,2])            
-            at_camera = np.array([snake.cabeza.posx,50,snake.cabeza.posy-2])
+            eye_camera = np.array([snake.cabeza.posx,snake.cabeza.posy+8,5])            
+        
+        at_camera = np.array([snake.cabeza.posx,snake.cabeza.posy,3.5])
+        self.camera1 = tr.lookAt(
+            eye_camera,
+            at_camera,
+            np.array([0,0,1])
+        )
+
+    def rotar_camera(self,snake):
+        self.rotando = True
+        self.i += 0.01
+        if self.angulo_ini == 0 and snake.theta == 3*np.pi/2:
+            self.angulo_ini = np.pi*2
+        if self.angulo_ini == 3*np.pi/2 and snake.theta == 0:
+            self.angulo_ini = -1*np.pi/2
+
+        if self.angulo_ini > snake.theta:
+            angulo = self.angulo_ini - self.i
+        else:
+            angulo = self.angulo_ini + self.i
+        if snake.theta == np.pi/2:
+            eye_camera = np.array(
+                [snake.cabeza.posx,
+                snake.cabeza.posy-8*sin(self.i)-4.5*cos(self.i),
+                4+sin(self.i)])
+            at_camera = np.array(
+                [snake.cabeza.posx+2*cos(angulo),
+                snake.cabeza.posy+2*sin(angulo),
+                3.5])
+
+        elif  snake.theta == 3*np.pi/2:
+            eye_camera = np.array(
+                [snake.cabeza.posx,
+                snake.cabeza.posy+8*sin(self.i)+4.5*cos(self.i),
+                4+sin(self.i)])
+            at_camera = np.array(
+                [snake.cabeza.posx+2*cos(angulo),
+                snake.cabeza.posy+2*sin(angulo),
+                3.5])
+
+        elif  snake.theta == 0:
+            eye_camera = np.array(
+                [snake.cabeza.posx-8*sin(self.i)-4.5*cos(self.i),
+                snake.cabeza.posy,
+                4+sin(self.i)])
+            at_camera = np.array(
+                [snake.cabeza.posx+2*cos(angulo),
+                snake.cabeza.posy+2*sin(angulo),
+                3.5])
+
+        elif snake.theta == np.pi:
+            eye_camera = np.array(
+                [snake.cabeza.posx+8*sin(self.i)+4.5*cos(self.i),
+                snake.cabeza.posy,
+                4+sin(self.i)])
+            at_camera = np.array(
+                [snake.cabeza.posx+2*cos(angulo),
+                snake.cabeza.posy+2*sin(angulo),
+                3.5])
         
         self.camera1 = tr.lookAt(
             eye_camera,
             at_camera,
             np.array([0,0,1])
         )
+        snake.cabeza.posicionar([snake.cabeza.posx,snake.cabeza.posy,snake.cabeza.posz],angulo)
+        if self.i > np.pi/2:
+            self.rotando = False
+            self.i = 0 
+
 
 # Clase para dibujar el escenario del juego (suelo y pared)
 class Escenario:

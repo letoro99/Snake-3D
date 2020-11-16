@@ -59,43 +59,49 @@ if __name__ == "__main__":
     
     t0 = 0
     dt = 0
-    rot = 0
+    rot_final = 0
 
     while not glfw.window_should_close(window):
         
         ti = glfw.get_time()
         dt = ti - t0
 
-        if dt > 0.3 and not snake.gameOver:
+        if dt > 0.3 and not snake.gameOver and camera.rotando == False:
             snake.update()
             camera.cambiar_pos_camera(snake)
             snake.colision(premio)
             dt = 0
             t0 = ti
-        
-        elif camera.rotando == True:
-            pass
-        
-        premio.posicionar_rotar(ti)
 
         glfw.poll_events()
-
-        camera.drawCamera(pipeline,width,height)
+        premio.posicionar_rotar(ti)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        
-        if snake.gameOver:
-            glClearColor(0,0,0,1)
-            if rot < (np.pi/15):
-                scene.update(rot)
-                rot += 0.00008
-            scene.draw_go(pipeline_pantalla,2)
-            glfw.swap_buffers(window)
 
-        else:
+        if camera.rotando and dt > 0.005:
+            dt = 0
+            t0 = ti 
+            camera.rotar_camera(snake)
+            camera.drawCamera(pipeline,width,height)
             scene.draw(pipeline)
             snake.draw(pipeline)
             premio.draw(pipeline)
             glfw.swap_buffers(window)
+        
+        elif snake.gameOver:
+            glClearColor(0,0,0,1)
+            if rot_final < (np.pi/15):
+                scene.update(rot_final)
+                rot_final += 0.00008
+            scene.draw_go(pipeline_pantalla,2)
+            glfw.swap_buffers(window)
+
+        elif camera.rotando == False and not snake.gameOver:
+            camera.drawCamera(pipeline,width,height)
+            scene.draw(pipeline)
+            snake.draw(pipeline)
+            premio.draw(pipeline)
+            glfw.swap_buffers(window)
+        
 
     glfw.terminate()

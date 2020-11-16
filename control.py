@@ -38,7 +38,7 @@ class Controller:
         elif key == glfw.KEY_T and action == glfw.PRESS:
             self.camera.cambiar_camera(3)
 
-        elif self.camera.camera_activa == 2 or self.camera.camera_activa == 3 or self.camera.camera_activa <= 3:
+        elif self.camera.camera_activa == 2 or self.camera.camera_activa == 3:
             if (key == glfw.KEY_LEFT or key == glfw.KEY_A) and action == glfw.PRESS:
                 if self.model.jugando == False and self.model.dx != 1:
                     self.model.dx = -1
@@ -64,30 +64,73 @@ class Controller:
                 if self.model.jugando == False and self.model.dy != 1:
                     self.model.dy = -1
                     self.model.dx = 0
-                    self.model.theta = -1*np.pi/2
+                    self.model.theta = 3*np.pi/2
                     self.model.jugando = True
         
-        elif self.camera.camera_activa == 5:
+        elif self.camera.camera_activa == 1:
             if (key == glfw.KEY_LEFT or key == glfw.KEY_A) and action == glfw.PRESS:
-                if self.model.theta == 0:
+                if self.model.theta == 0 and self.model.jugando == False:
+                    self.camera.rotando = True
+                    self.camera.angulo_ini = self.model.theta
                     self.model.dy = 1
                     self.model.dx = 0
                     self.model.theta = 1*np.pi/2
                     self.model.jugando = True
 
-                elif self.model.theta == np.pi/2:
-                    pass
-                elif self.model.theta == np.pi:
-                    pass
-                elif self.model.theta == -1*np.pi/2:
-                    pass
+                elif self.model.theta == np.pi/2 and self.model.jugando == False:
+                    self.camera.rotando = True
+                    self.camera.angulo_ini = self.model.theta
+                    self.model.dy = 0
+                    self.model.dx = -1
+                    self.model.theta = np.pi
+                    self.model.jugando = True
+
+                elif self.model.theta == np.pi and self.model.jugando == False:
+                    self.camera.rotando = True
+                    self.camera.angulo_ini = self.model.theta
+                    self.model.dy = -1
+                    self.model.dx = 0
+                    self.model.theta = 3*np.pi/2
+                    self.model.jugando = True
+
+                elif self.model.theta == 3*np.pi/2 and self.model.jugando == False:
+                    self.camera.rotando = True
+                    self.camera.angulo_ini = self.model.theta
+                    self.model.dy = 0
+                    self.model.dx = 1
+                    self.model.theta = 0
+                    self.model.jugando = True
+
             if (key == glfw.KEY_RIGHT or key == glfw.KEY_D) and action == glfw.PRESS:
-                if self.model.theta == 0:
-                    pass
-                elif self.model.theta == np.pi/2:
-                    pass
-                elif self.model.theta == np.pi:
-                    pass
-                elif self.model.theta == -1*np.pi/2:
-                    pass
+                if self.model.theta == 0 and self.model.jugando == False:
+                    self.camera.rotando = True
+                    self.camera.angulo_ini = self.model.theta
+                    self.model.dy = -1
+                    self.model.dx = 0
+                    self.model.theta = 3*np.pi/2
+                    self.model.jugando = True
+
+                elif self.model.theta == np.pi/2 and self.model.jugando == False:
+                    self.camera.rotando = True
+                    self.camera.angulo_ini = self.model.theta
+                    self.model.dy = 0
+                    self.model.dx = 1
+                    self.model.theta = 0
+                    self.model.jugando = True
+
+                elif self.model.theta == np.pi and self.model.jugando == False:
+                    self.camera.rotando = True
+                    self.camera.angulo_ini = self.model.theta
+                    self.model.dy = 1
+                    self.model.dx = 0
+                    self.model.theta = np.pi/2
+                    self.model.jugando = True
+
+                elif self.model.theta == 3*np.pi/2 and self.model.jugando == False:
+                    self.camera.rotando = True
+                    self.camera.angulo_ini = self.model.theta
+                    self.model.dy = 0
+                    self.model.dx = -1
+                    self.model.theta = np.pi
+                    self.model.jugando = True
         

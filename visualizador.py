@@ -16,6 +16,9 @@ import basic_shapes as bs
 
 if __name__ == "__main__":
 
+    # Eleccion de tamaño del mapa 
+    n = 10
+
     # Initialize glfw
     if not glfw.init():
         sys.exit()
@@ -37,6 +40,7 @@ if __name__ == "__main__":
     pipeline = es.SimpleModelViewProjectionShaderProgram()
     pipeline_pantalla = es.SimpleTextureTransformShaderProgram()
     pipeline_texture = es.SimpleTextureModelViewProjectionShaderProgram()
+    pipeline_light = ls.SimpleGouraudShaderProgram()
     
     glUseProgram(pipeline.shaderProgram)
 
@@ -45,11 +49,11 @@ if __name__ == "__main__":
     glEnable(GL_DEPTH_TEST)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
-    scene = Escenario(22)
-    snake = Serpiente()
-    premio = Premio()
+    scene = Escenario(n+2)
+    snake = Serpiente(n)
+    premio = Premio(n)
     premio.update(snake)
-    camera = Camera()
+    camera = Camera(n)
     camera.cambiar_pos_camera(snake)
 
     controlador.set_model(snake)
@@ -66,10 +70,10 @@ if __name__ == "__main__":
         ti = glfw.get_time()
         dt = ti - t0
 
-        if dt > 0.3 and not snake.gameOver and camera.rotando == False:
+        if dt > 0.2 and not snake.gameOver and camera.rotando == False:
+            snake.colision(premio)
             snake.update()
             camera.cambiar_pos_camera(snake)
-            snake.colision(premio)
             dt = 0
             t0 = ti
 
@@ -78,14 +82,14 @@ if __name__ == "__main__":
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        if camera.rotando and dt > 0.005:
+        if camera.rotando and dt > 0.0001/snake.n:
             dt = 0
             t0 = ti 
             camera.rotar_camera(snake)
             camera.drawCamera(pipeline,width,height)
-            scene.draw(pipeline)
             snake.draw(pipeline)
-            premio.draw(pipeline)
+            camera.drawCamera(pipeline_texture,width,height)
+            scene.draw(pipeline_texture)
             glfw.swap_buffers(window)
         
         elif snake.gameOver:
@@ -98,9 +102,11 @@ if __name__ == "__main__":
 
         elif camera.rotando == False and not snake.gameOver:
             camera.drawCamera(pipeline,width,height)
-            scene.draw(pipeline)
             snake.draw(pipeline)
-            premio.draw(pipeline)
+            camera.drawCamera(pipeline_texture,width,height)
+            scene.draw(pipeline_texture)
+            camera.drawCamera(pipeline_light,width,height)
+            premio.draw(pipeline_light)
             glfw.swap_buffers(window)
         
 

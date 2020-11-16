@@ -12,6 +12,7 @@ import OpenGL.GL.shaders
 import basic_shapes as bs
 import local_shapes as losh
 import transformations as tr
+import lighting_shaders as ls
 import easy_shaders as es
 import scene_graph as sg
 
@@ -128,8 +129,8 @@ def generar_esfera_unit(nTheta,nPhi,color):
 # Clase para dibujar la cabeza de la serpiente 
 class Cabeza:
     def __init__(self,x,y,z):
-        gpu_cabeza = es.toGPUShape(generar_esfera_unit(5,7,[1,0,0]))
-        gpu_lengua = es.toGPUShape(bs.createColorCube(0,1,0))
+        gpu_cabeza = es.toGPUShape(generar_esfera_unit(5,7,[0,1,0]))
+        gpu_lengua = es.toGPUShape(bs.createColorCube(1,0,0))
         gpu_ojos = es.toGPUShape(bs.createColorCube(0,0,0))
 
         cabeza = sg.SceneGraphNode('cabeza')
@@ -167,7 +168,7 @@ class Cabeza:
 # Clase para dibujar el cuepro de la serpiente 
 class Cuerpo:
     def __init__(self,x,y,z):
-        gpu_cuerpo = es.toGPUShape(generar_esfera_unit(5,7,[0.5,0.1,0]))
+        gpu_cuerpo = es.toGPUShape(generar_esfera_unit(5,7,[0.4,1,0.4]))
 
         cuerpo = sg.SceneGraphNode('cuerpo')
         cuerpo.transform = tr.uniformScale(0.7)
@@ -192,7 +193,8 @@ class Cuerpo:
 # Clase para dibujar la serpiente 
 class Serpiente:
 
-    def __init__(self):
+    def __init__(self,n):
+        self.mapa = n/2
         self.cabeza = Cabeza(0,0,1)
         self.n = 3
         self.cola = [Cuerpo(0,1,1),Cuerpo(0,2,1),Cuerpo(0,3,1)]
@@ -216,31 +218,36 @@ class Serpiente:
             self.cola[i].draw(pipeline)
 
     def colision(self,premio):
+        n = self.mapa
         error = 0.00001
-        if 11 - error <= self.cabeza.posx <= 11 + error or 11 - error <= self.cabeza.posy <= 11 + error:
+        if (n+1) - error <= self.cabeza.posx <= (n+1) + error or (n+1) - error <= self.cabeza.posy <= (n+1) + error:
             self.gameOver = True
             print('muralla')
+            print(str(self.n))
             
-        if -11 - error <= self.cabeza.posx <= -11 + error or -11 - error <= self.cabeza.posy <= -11 + error:
+        if -(n+1)- error <= self.cabeza.posx <= -(n+1) + error or -(n+1) - error <= self.cabeza.posy <= -(n+1) + error:
             self.gameOver = True
             print('muralla')
+            print(str(self.n))
 
         if self.cabeza.posx - error <= premio.pos_x  <= self.cabeza.posx + error and self.cabeza.posy - error <= premio.pos_y <= self.cabeza.posy + error:
             nuevo = Cuerpo(self.cola[self.n-1].posx,self.cola[self.n-1].posy,1)
             nuevo.posicionar([self.cola[self.n-1].posx,self.cola[self.n-1].posy,1])
             self.cola.append(nuevo)
             premio.update(self)
+            self.n += 1
 
         for i in range(len(self.cola)):
             if self.cabeza.posx - error <= self.cola[i].posx  <= self.cabeza.posx + error and self.cabeza.posy - error <= self.cola[i].posy <= self.cabeza.posy + error:
                 self.gameOver = True
                 print('cuerpo')
+                print(str(self.n))
 
 # Clase para dibujar el objeto premio
 class Premio:
 
-    def __init__(self):
-        gpu_premio = es.toGPUShape(shape=readOBJ('star.obj',(0.9,0.6,0.2)))
+    def __init__(self,n):
+        gpu_premio = es.toGPUShape(shape=readOBJ('img/star - copia.obj',(0.9,0.6,0.2)))
 
         premio = sg.SceneGraphNode('premio')
         premio.transform = tr.uniformScale(1.5)
@@ -250,12 +257,13 @@ class Premio:
         transform_premio.childs += [premio]
 
         self.model = transform_premio
-        self.pos_x = rd.randint(0,10)
-        self.pos_y = rd.randint(0,10)
+        self.n = n/2
+        self.pos_x = 0
+        self.pos_y = 0
 
     def randomPos(self):
-        self.pos_x = rd.randint(0,10)
-        self.pos_y = rd.randint(0,10)
+        self.pos_x = rd.randint(-self.n,self.n)
+        self.pos_y = rd.randint(-self.n,self.n)
 
     def posicionar(self):
         self.model.transform = tr.translate(self.pos_x,self.pos_y,5)
@@ -277,11 +285,25 @@ class Premio:
 
     def draw(self,pipeline):
         glUseProgram(pipeline.shaderProgram)
+        # White light in all components: ambient, diffuse and specular.
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "La"), 0.1, 0.1, 0.1)
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ld"), 0.3, 0.3, 0.3)
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ls"), 0.3, 0.3, 0.3)
+        # Object is barely visible at only ambient. Bright white for diffuse and specular components.
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ka"), 0.1, 0.1, 0.1)
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Kd"), 0.3, 0.3, 0.3)
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ks"), 0.3, 0.3, 0.3)
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "lightPosition"), self.pos_x, self.pos_y, 1)
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "viewPosition"), 0,0,0)
+        glUniform1ui(glGetUniformLocation(pipeline.shaderProgram, "shininess"), 10)
+        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "constantAttenuation"), 0.0001)
+        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "linearAttenuation"), 0.03)
+        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "quadraticAttenuation"), 0.01)
         sg.drawSceneGraphNode(self.model,pipeline,"model")
 
 # Clase para controlar las distintas camaras dependiendo de la tecla escogida.
 class Camera:
-    def __init__(self):
+    def __init__(self,n):
 
         camera_first = tr.lookAt(
             np.array([0,0,0]),
@@ -290,12 +312,12 @@ class Camera:
         )
         
         camera_2d = tr.lookAt(
-            np.array([0,-0.0001,30]),
+            np.array([0,-0.0001,n+5]),
             np.array([0,0,0]),
             np.array([0,0,1])
         )
         camera_iso = tr.lookAt(
-            np.array([20,-20,26]),
+            np.array([n,-n,n+6]),
             np.array([0,0,0]),
             np.array([0,0,1])
         )
@@ -303,7 +325,8 @@ class Camera:
         self.camera1 = camera_first
         self.camera2 = camera_2d
         self.camera3 = camera_iso
-        self.camera_activa = 2
+        self.camera_activa = 1
+        self.projection = tr.perspective(45, float(600)/float(600), 0.1, 100)
         self.rotando = False
         self.i = 0
         self.angulo_ini = 0
@@ -319,8 +342,7 @@ class Camera:
         else:
             camera = self.camera3
         glUseProgram(pipeline.shaderProgram)
-        projection = tr.perspective(45, float(width)/float(height), 0.1, 100)
-        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "projection"), 1, GL_TRUE, projection)
+        glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "projection"), 1, GL_TRUE, self.projection)
         glUniformMatrix4fv(glGetUniformLocation(pipeline.shaderProgram, "view"), 1, GL_TRUE, camera)
 
     def cambiar_pos_camera(self,snake):
@@ -342,7 +364,7 @@ class Camera:
 
     def rotar_camera(self,snake):
         self.rotando = True
-        self.i += 0.01
+        self.i += 0.05
         if self.angulo_ini == 0 and snake.theta == 3*np.pi/2:
             self.angulo_ini = np.pi*2
         if self.angulo_ini == 3*np.pi/2 and snake.theta == 0:
@@ -401,15 +423,15 @@ class Camera:
         if self.i > np.pi/2:
             self.rotando = False
             self.i = 0 
-
-
+        
 # Clase para dibujar el escenario del juego (suelo y pared)
 class Escenario:
 
     def __init__(self,n):
         # Creamos pard
-        gpu_pared = es.toGPUShape(bs.createColorCube(0.2,1,1))
-        gpu_base = es.toGPUShape(bs.createColorQuad(0.8,0.8,0))
+        gpu_base_lava = es.toGPUShape(bs.createTextureQuad('img/lava.jpg'),GL_REPEAT, GL_NEAREST)
+        gpu_pared = es.toGPUShape(bs.createTextureCube('img/jungle.jpg'),GL_REPEAT, GL_NEAREST)
+        gpu_base = es.toGPUShape(bs.createTextureQuad('img/dirt.png'),GL_REPEAT, GL_NEAREST)
         gpu_texture_go = es.toGPUShape(bs.createTextureQuad('img/game_over.png'),GL_REPEAT, GL_NEAREST)
         gpu_texture_win = es.toGPUShape(bs.createTextureQuad('img/win.png'),GL_REPEAT, GL_NEAREST)
 
@@ -420,8 +442,13 @@ class Escenario:
 
         #Suelo
         suelo = sg.SceneGraphNode('suelo')
-        suelo.transform = tr.uniformScale(n)
+        suelo.transform = tr.uniformScale(1*n)
         suelo.childs += [gpu_base]
+
+        # Suelo lava
+        lava = sg.SceneGraphNode('lava')
+        lava.transform = tr.matmul([tr.translate(0,0,-2),tr.uniformScale(2.5*n)])
+        lava.childs += [gpu_base_lava]
         
         # Fondo Game Over
         fondo_gameover = sg.SceneGraphNode('fondo_gameover')
@@ -434,7 +461,7 @@ class Escenario:
         fondo_win.childs += [gpu_texture_win]
 
         transform_escenario = sg.SceneGraphNode('escenario')
-        transform_escenario.childs += [suelo,paredes] 
+        transform_escenario.childs += [suelo,paredes,lava] 
         
         self.model = transform_escenario
         self.model1 = fondo_win

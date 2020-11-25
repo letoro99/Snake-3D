@@ -41,6 +41,7 @@ if __name__ == "__main__":
     pipeline_pantalla = es.SimpleTextureTransformShaderProgram()
     pipeline_texture = es.SimpleTextureModelViewProjectionShaderProgram()
     pipeline_light = ls.SimpleGouraudShaderProgram()
+
     
     glUseProgram(pipeline.shaderProgram)
 
@@ -64,16 +65,18 @@ if __name__ == "__main__":
     t0 = 0
     dt = 0
     rot_final = 0
+    angulo_sol = 0
 
     while not glfw.window_should_close(window):
         
         ti = glfw.get_time()
         dt = ti - t0
 
-        if dt > 0.2 and not snake.gameOver and camera.rotando == False:
+        if dt > 5 and not snake.gameOver and camera.rotando == False:
             snake.colision(premio)
             snake.update()
             camera.cambiar_pos_camera(snake)
+            angulo_sol += np.pi/18
             dt = 0
             t0 = ti
 
@@ -82,14 +85,15 @@ if __name__ == "__main__":
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        if camera.rotando and dt > 0.0001/snake.n:
+        if camera.rotando and dt > 0.0001/snake.n and not snake.gameOver:
             dt = 0
             t0 = ti 
             camera.rotar_camera(snake)
-            camera.drawCamera(pipeline,width,height)
-            snake.draw(pipeline)
             camera.drawCamera(pipeline_texture,width,height)
             scene.draw(pipeline_texture)
+            camera.drawCamera(pipeline_light,width,height)
+            snake.draw(pipeline_light,[10*cos(angulo_sol),10*sin(angulo_sol),10])            
+            premio.draw(pipeline_light,snake.n-3)
             glfw.swap_buffers(window)
         
         elif snake.gameOver:
@@ -101,12 +105,11 @@ if __name__ == "__main__":
             glfw.swap_buffers(window)
 
         elif camera.rotando == False and not snake.gameOver:
-            camera.drawCamera(pipeline,width,height)
-            snake.draw(pipeline)
             camera.drawCamera(pipeline_texture,width,height)
             scene.draw(pipeline_texture)
             camera.drawCamera(pipeline_light,width,height)
-            premio.draw(pipeline_light)
+            snake.draw(pipeline_light,[10*cos(angulo_sol),10*sin(angulo_sol),10])
+            premio.draw(pipeline_light,snake.n-3)
             glfw.swap_buffers(window)
         
 

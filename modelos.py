@@ -71,12 +71,12 @@ def readOBJ(filename, color):
             # Checking each of the triangle vertices
             for i in range(0,3):
                 vertex = vertices[face[i][0]-1]
-                #normal = normals[face[i][2]-1]
+                normal = normals[face[i][2]-1]
 
                 vertexData += [
                     vertex[0], vertex[1], vertex[2],
-                    color[0], color[1], color[2]#,
-                    #normal[0], normal[1], normal[2]
+                    color[0], color[1], color[2],
+                    normal[0], normal[1], normal[2]
                 ]
 
             # Connecting the 3 vertices to create a triangle
@@ -113,7 +113,7 @@ def generar_esfera_unit(nTheta,nPhi,color):
             b = np.array([cos_phi_next * sin_theta_next, sin_phi_next * sin_theta_next, cos_theta_next])
             c = np.array([cos_phi_next * sin_theta     , sin_phi_next * sin_theta     , cos_theta])
             d = np.array([cos_phi * sin_theta          , sin_phi * sin_theta          , cos_theta])
-
+    
             _vertex, _indices = losh.createColorQuadIndexation(
                 start_index,
                 a, b, c, d,
@@ -126,12 +126,55 @@ def generar_esfera_unit(nTheta,nPhi,color):
     return bs.Shape(vertices, indices)
     pass
 
+def generar_esfera_unit_light(nTheta,nPhi,color):
+    vertices = []
+    indices = []
+
+    theta_angs = np.linspace(0, np.pi, nTheta, endpoint=True)
+    phi_angs = np.linspace(0, 2 * np.pi, nPhi, endpoint=True)
+
+    start_index = 0
+
+    for theta_ind in range(len(theta_angs)-1): # vertical
+        cos_theta = np.cos(theta_angs[theta_ind]) # z_top
+        cos_theta_next = np.cos(theta_angs[theta_ind + 1]) # z_bottom
+
+        sin_theta = np.sin(theta_angs[theta_ind])
+        sin_theta_next = np.sin(theta_angs[theta_ind + 1])
+
+
+        for phi_ind in range(len(phi_angs)-1): # horizontal
+            cos_phi = np.cos(phi_angs[phi_ind])
+            cos_phi_next = np.cos(phi_angs[phi_ind + 1])
+            sin_phi = np.sin(phi_angs[phi_ind])
+            sin_phi_next = np.sin(phi_angs[phi_ind + 1])
+
+             #                     X                             Y                          Z
+            a = np.array([cos_phi      * sin_theta_next, sin_phi * sin_theta_next     , cos_theta_next])
+            b = np.array([cos_phi_next * sin_theta_next, sin_phi_next * sin_theta_next, cos_theta_next])
+            c = np.array([cos_phi_next * sin_theta     , sin_phi_next * sin_theta     , cos_theta])
+            d = np.array([cos_phi * sin_theta          , sin_phi * sin_theta          , cos_theta])
+
+            a_n = 2*np.array([cos_phi      * sin_theta_next, sin_phi * sin_theta_next     , cos_theta_next])
+            b_n = 2*np.array([cos_phi_next * sin_theta_next, sin_phi_next * sin_theta_next, cos_theta_next])
+            c_n = 2*np.array([cos_phi_next * sin_theta     , sin_phi_next * sin_theta     , cos_theta])
+            d_n = 2*np.array([cos_phi * sin_theta          , sin_phi * sin_theta          , cos_theta])
+
+            _vertex, _indices = losh.createColorSpecificNormals(start_index, a, b, c, d, a_n, b_n, c_n, d_n, color)
+
+            vertices += _vertex
+            indices  += _indices
+            start_index += 4
+
+    return bs.Shape(vertices, indices)
+    pass
+
 # Clase para dibujar la cabeza de la serpiente 
 class Cabeza:
     def __init__(self,x,y,z):
-        gpu_cabeza = es.toGPUShape(generar_esfera_unit(5,7,[0,1,0]))
-        gpu_lengua = es.toGPUShape(bs.createColorCube(1,0,0))
-        gpu_ojos = es.toGPUShape(bs.createColorCube(0,0,0))
+        gpu_cabeza = es.toGPUShape(generar_esfera_unit_light(5,7,[0,1,0]))
+        gpu_lengua = es.toGPUShape(bs.createColorNormalsCube(1,0,0))
+        gpu_ojos = es.toGPUShape(bs.createColorNormalsCube(0,0,0))
 
         cabeza = sg.SceneGraphNode('cabeza')
         cabeza.transform = tr.uniformScale(0.7)
@@ -168,7 +211,7 @@ class Cabeza:
 # Clase para dibujar el cuepro de la serpiente 
 class Cuerpo:
     def __init__(self,x,y,z):
-        gpu_cuerpo = es.toGPUShape(generar_esfera_unit(5,7,[0.4,1,0.4]))
+        gpu_cuerpo = es.toGPUShape(generar_esfera_unit_light(5,7,[0,1,0]))
 
         cuerpo = sg.SceneGraphNode('cuerpo')
         cuerpo.transform = tr.uniformScale(0.7)
@@ -212,7 +255,24 @@ class Serpiente:
         self.jugando = False
         print(self.cabeza.posx,self.cabeza.posy)
     
-    def draw(self,pipeline):
+    def draw(self,pipeline,sol):
+        glUseProgram(pipeline.shaderProgram)
+
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "La"), 0.8, 0.8, 0.8)
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ld"), 0.7, 0.7 ,0.7)
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ls"), 0.6, 0.6, 0.6)
+
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ka"), 0.5, 0.5, 0.5)
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Kd"), 0.8, 0.8, 0.8)
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ks"), 1.0, 1.0, 1.0)
+
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "lightPosition"), sol[0], sol[1], sol[2])
+        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "viewPosition"), 0,0,0)
+        glUniform1ui(glGetUniformLocation(pipeline.shaderProgram, "shininess"), 100)
+            
+        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "constantAttenuation"), 0.001)
+        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "linearAttenuation"), 0.05)
+        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "quadraticAttenuation"), 0.00001)
         self.cabeza.draw(pipeline)
         for i in range(len(self.cola)):
             self.cola[i].draw(pipeline)
@@ -247,10 +307,10 @@ class Serpiente:
 class Premio:
 
     def __init__(self,n):
-        gpu_premio = es.toGPUShape(shape=readOBJ('img/star - copia.obj',(0.9,0.6,0.2)))
+        gpu_premio = es.toGPUShape(shape=readOBJ('img/star.obj',(0.5,0.5,0)))
 
         premio = sg.SceneGraphNode('premio')
-        premio.transform = tr.uniformScale(1.5)
+        premio.transform = tr.uniformScale(1)
         premio.childs += [gpu_premio]
 
         transform_premio = sg.SceneGraphNode('premioTR')
@@ -283,23 +343,45 @@ class Premio:
                     break
         print(self.pos_x,self.pos_y)
 
-    def draw(self,pipeline):
-        glUseProgram(pipeline.shaderProgram)
-        # White light in all components: ambient, diffuse and specular.
-        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "La"), 0.1, 0.1, 0.1)
-        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ld"), 0.3, 0.3, 0.3)
-        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ls"), 0.3, 0.3, 0.3)
-        # Object is barely visible at only ambient. Bright white for diffuse and specular components.
-        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ka"), 0.1, 0.1, 0.1)
-        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Kd"), 0.3, 0.3, 0.3)
-        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ks"), 0.3, 0.3, 0.3)
-        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "lightPosition"), self.pos_x, self.pos_y, 1)
-        glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "viewPosition"), 0,0,0)
-        glUniform1ui(glGetUniformLocation(pipeline.shaderProgram, "shininess"), 10)
-        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "constantAttenuation"), 0.0001)
-        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "linearAttenuation"), 0.03)
-        glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "quadraticAttenuation"), 0.01)
-        sg.drawSceneGraphNode(self.model,pipeline,"model")
+    def draw(self,pipeline,comidas):
+        if comidas%5 != 0 or comidas == 0:
+            glUseProgram(pipeline.shaderProgram)
+
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "La"), 1.0, 1.0 ,1.0) # Componente ambiental de la fuente
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ld"), 0.6, 0.6, 0.6) # Componente difusa de la fuente
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ls"), 0.5, 0.5, 0.5) # Componente especular de la fuente
+
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ka"), 0.5, 0.5, 0.5) # Componente relfexion ambiental
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Kd"), 0.5, 0.5, 0.5) # Componente reflexion difusa
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ks"), 1.0, 1.0 ,1.0) # Componente reflexion especular
+            
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "lightPosition"), self.pos_x,self.pos_y,10)
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "viewPosition"), self.pos_x,self.pos_y,0)
+            glUniform1ui(glGetUniformLocation(pipeline.shaderProgram, "shininess"), 100)
+
+            glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "constantAttenuation"), 0.01)
+            glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "linearAttenuation"), 0.1)
+            glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "quadraticAttenuation"), 0.001)
+            sg.drawSceneGraphNode(self.model,pipeline,"model")
+        else:
+            glUseProgram(pipeline.shaderProgram)
+
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "La"), 1.0, 1.0, 1.0)
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ld"), 0.7, 0.7 ,0.7)
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ls"), 0.6, 0.6, 0.6)
+
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ka"), 1.0, 1.0, 1.0)
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Kd"), 0.8, 0.8, 0.8)
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "Ks"), 1.0, 1.0, 1.0)
+
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "lightPosition"), self.pos_x,self.pos_y,10)
+            glUniform3f(glGetUniformLocation(pipeline.shaderProgram, "viewPosition"), self.pos_x,self.pos_y,0)
+            glUniform1ui(glGetUniformLocation(pipeline.shaderProgram, "shininess"), 100)
+            
+            glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "constantAttenuation"), 0.001)
+            glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "linearAttenuation"), 0.05)
+            glUniform1f(glGetUniformLocation(pipeline.shaderProgram, "quadraticAttenuation"), 0.00001)
+            sg.drawSceneGraphNode(self.model,pipeline,"model")
 
 # Clase para controlar las distintas camaras dependiendo de la tecla escogida.
 class Camera:

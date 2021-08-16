@@ -1,12 +1,6 @@
 # tarea2
 
-#cosas por hacer
- - Cambiar color a serpiente
- - cambiar a textura a la base y la pared
- - pensar en agregar el obstaculo.
- - agregar la iluminacion.
- - agregar diferentes tamaños (5 , 10 , 15)
-
+ACTUALIZAR README
 
 # version v0.5
  - Se arreglo el funcionamietno de la camara en "primera persona".
